@@ -10,25 +10,26 @@
             background-color: #0f172a;
             color: #f8fafc;
             font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
         }
         .bar-container {
-            height: 350px;
+            height: 400px;
             display: flex;
             align-items: flex-end;
             justify-content: center;
             gap: 8px;
-            padding: 20px;
+            padding: 40px 20px;
             background: #1e293b;
             border-radius: 16px;
+            position: relative;
         }
         .bar {
             background-color: #3b82f6;
             border-radius: 8px 8px 4px 4px;
-            transition: all 0.3s ease;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
             display: flex;
             justify-content: center;
-            align-items: flex-start;
         }
         .bar-label {
             position: absolute;
@@ -38,103 +39,110 @@
             border-radius: 12px;
             font-size: 12px;
             border: 1px solid #475569;
+            white-space: nowrap;
         }
-        .pointer {
+        /* Penanda Low, Mid, High */
+        .marker {
             position: absolute;
-            bottom: -30px;
-            color: #fbbf24;
-            transition: all 0.3s ease;
+            bottom: -35px;
+            font-size: 10px;
+            font-weight: bold;
+            text-transform: uppercase;
+            padding: 2px 6px;
+            border-radius: 4px;
+            transition: all 0.4s ease;
         }
-        .active-bar { background-color: #fbbf24 !important; transform: scaleX(1.1); }
-        .success-bar { background-color: #22c55e !important; }
-        .fail-bar { background-color: #ef4444 !important; opacity: 0.5; }
-        .range-bar { background-color: #6366f1 !important; } /* For binary search bounds */
+        .marker-low { background: #6366f1; color: white; transform: translateY(0); }
+        .marker-mid { background: #fbbf24; color: #1e293b; transform: translateY(20px); }
+        .marker-high { background: #ec4899; color: white; transform: translateY(0); }
 
-        input[type="range"] {
-            accent-color: #3b82f6;
-        }
+        .active-bar { background-color: #fbbf24 !important; transform: scaleX(1.1) translateY(-5px); box-shadow: 0 0 15px rgba(251, 191, 36, 0.5); }
+        .success-bar { background-color: #22c55e !important; transform: scale(1.05); }
+        .fail-bar { background-color: #334155 !important; opacity: 0.3; filter: grayscale(1); }
+        .range-highlight { border: 2px solid #6366f1; background-color: rgba(99, 102, 241, 0.1); }
+
+        input[type="range"] { accent-color: #3b82f6; }
         select, input[type="number"] {
             background: #334155;
             border: 1px solid #475569;
             color: white;
-            padding: 4px 8px;
-            border-radius: 6px;
+            padding: 6px 12px;
+            border-radius: 8px;
         }
-        button {
-            transition: all 0.2s;
-        }
-        button:active {
-            transform: scale(0.95);
-        }
+        button { transition: all 0.2s; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
     </style>
 </head>
 <body class="p-4 md:p-8">
     <div class="max-w-4xl mx-auto">
         <!-- Header & Stats -->
-        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-            <h1 class="text-2xl font-bold">Visualisasi Algoritma Pencarian</h1>
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4 bg-slate-800/50 p-4 rounded-xl">
+            <h1 class="text-2xl font-bold">Visualisasi Pencarian</h1>
             <div class="flex gap-6 text-sm">
                 <div>
-                    <p class="text-slate-400 uppercase text-xs font-semibold">Algoritma</p>
-                    <p id="stat-algo" class="font-medium text-blue-400">Linear Search</p>
+                    <p class="text-slate-400 uppercase text-xs font-bold tracking-wider">Algoritma</p>
+                    <p id="stat-algo" class="font-medium text-blue-400">-</p>
                 </div>
                 <div>
-                    <p class="text-slate-400 uppercase text-xs font-semibold">Perbandingan</p>
-                    <p id="stat-comparisons" class="font-medium">0</p>
+                    <p class="text-slate-400 uppercase text-xs font-bold tracking-wider">Langkah</p>
+                    <p id="stat-comparisons" class="font-medium text-white text-lg">0</p>
                 </div>
                 <div>
-                    <p class="text-slate-400 uppercase text-xs font-semibold">Status</p>
-                    <p id="stat-status" class="font-medium text-yellow-400">Siap</p>
+                    <p class="text-slate-400 uppercase text-xs font-bold tracking-wider">Status</p>
+                    <p id="stat-status" class="font-medium text-yellow-400 italic">Siap</p>
                 </div>
             </div>
         </div>
 
-        <!-- Main Visualization Canvas -->
-        <div id="visual-area" class="bar-container mb-8 relative">
-            <!-- Bars will be injected here -->
+        <!-- Visualization Canvas -->
+        <div id="visual-area" class="bar-container mb-8">
+            <!-- Batang data akan muncul di sini -->
         </div>
 
         <!-- Controls -->
-        <div class="bg-slate-800 p-6 rounded-2xl shadow-xl border border-slate-700">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                <!-- Left Controls -->
-                <div class="space-y-4">
-                    <div class="flex items-center justify-between">
-                        <label class="text-sm font-medium">Algoritma</label>
-                        <select id="algo-select" class="w-48">
-                            <option value="linear">Linear Search</option>
-                            <option value="binary">Binary Search (Auto-Sort)</option>
+        <div class="bg-slate-800 p-6 rounded-2xl shadow-2xl border border-slate-700">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
+                <!-- Sisi Kiri -->
+                <div class="space-y-5">
+                    <div class="flex flex-col gap-2">
+                        <label class="text-sm font-semibold text-slate-300">Pilih Metode</label>
+                        <select id="algo-select" class="w-full">
+                            <option value="linear">Linear Search (Data Acak)</option>
+                            <option value="binary">Binary Search (Data Terurut)</option>
                         </select>
                     </div>
-                    <div class="flex items-center justify-between">
-                        <label class="text-sm font-medium">Cari Angka</label>
-                        <input type="number" id="target-input" value="50" class="w-20 text-center">
+                    <div class="flex flex-col gap-2">
+                        <label class="text-sm font-semibold text-slate-300">Target Angka</label>
+                        <div class="flex gap-2">
+                            <input type="number" id="target-input" value="50" class="flex-1 text-center text-lg font-bold">
+                            <button id="btn-random-target" class="bg-slate-700 px-3 rounded-lg hover:bg-slate-600">🎲</button>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Right Controls -->
-                <div class="space-y-4">
+                <!-- Sisi Kanan -->
+                <div class="space-y-5">
                     <div class="flex flex-col gap-2">
                         <div class="flex justify-between">
-                            <label class="text-sm font-medium">Ukuran Data</label>
-                            <span id="size-val" class="text-xs bg-slate-700 px-2 rounded">10</span>
+                            <label class="text-sm font-semibold text-slate-300">Ukuran Data</label>
+                            <span id="size-val" class="text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded">15</span>
                         </div>
-                        <input type="range" id="size-slider" min="5" max="20" value="10" class="w-full">
+                        <input type="range" id="size-slider" min="5" max="25" value="15" class="w-full">
                     </div>
                     <div class="flex flex-col gap-2">
                         <div class="flex justify-between">
-                            <label class="text-sm font-medium">Kecepatan (detik)</label>
-                            <span id="speed-val" class="text-xs bg-slate-700 px-2 rounded">0.5s</span>
+                            <label class="text-sm font-semibold text-slate-300">Kecepatan</label>
+                            <span id="speed-val" class="text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded">0.8s</span>
                         </div>
-                        <input type="range" id="speed-slider" min="1" max="20" value="5" class="w-full">
+                        <input type="range" id="speed-slider" min="1" max="20" value="8" class="w-full">
                     </div>
                 </div>
             </div>
 
             <!-- Action Buttons -->
             <div class="grid grid-cols-2 gap-4">
-                <button id="btn-run" class="bg-blue-600 hover:bg-blue-500 py-3 rounded-xl font-bold shadow-lg shadow-blue-900/20">Jalankan</button>
-                <button id="btn-reset" class="bg-slate-700 hover:bg-slate-600 py-3 rounded-xl font-bold">Acak Ulang</button>
+                <button id="btn-run" class="bg-blue-600 hover:bg-blue-500 py-4 rounded-xl font-bold shadow-lg shadow-blue-900/40 text-lg">Jalankan</button>
+                <button id="btn-reset" class="bg-slate-700 hover:bg-slate-600 py-4 rounded-xl font-bold text-lg">Acak Ulang</button>
             </div>
         </div>
     </div>
@@ -147,6 +155,7 @@
         const speedSlider = document.getElementById('speed-slider');
         const btnRun = document.getElementById('btn-run');
         const btnReset = document.getElementById('btn-reset');
+        const btnRandomTarget = document.getElementById('btn-random-target');
         
         const statAlgo = document.getElementById('stat-algo');
         const statComp = document.getElementById('stat-comparisons');
@@ -156,10 +165,9 @@
         let isRunning = false;
         let comparisons = 0;
 
-        // Initialize
         function init() {
-            generateData();
             updateLabels();
+            generateData();
         }
 
         function updateLabels() {
@@ -171,7 +179,7 @@
         function generateData() {
             if (isRunning) return;
             const size = parseInt(sizeSlider.value);
-            data = Array.from({ length: size }, () => Math.floor(Math.random() * 90) + 10);
+            data = Array.from({ length: size }, () => Math.floor(Math.random() * 85) + 10);
             
             if (algoSelect.value === 'binary') {
                 data.sort((a, b) => a - b);
@@ -181,45 +189,62 @@
             comparisons = 0;
             statComp.innerText = '0';
             statStatus.innerText = 'Siap';
-            statStatus.className = 'font-medium text-yellow-400';
-            btnRun.disabled = false;
+            statStatus.className = 'font-medium text-yellow-400 italic';
             btnRun.innerText = 'Jalankan';
         }
 
-        function renderBars(activeIndex = -1, successIndex = -1, failIndices = [], rangeIndices = []) {
+        function renderBars(state = {}) {
+            // state: { active, low, high, mid, success, fails }
             visualArea.innerHTML = '';
             const containerWidth = visualArea.clientWidth - 40;
-            const barWidth = (containerWidth / data.length) - 8;
+            const barWidth = Math.floor((containerWidth / data.length) - 8);
 
             data.forEach((val, i) => {
                 const bar = document.createElement('div');
                 bar.className = 'bar';
-                bar.style.height = `${val * 3}px`;
+                bar.style.height = `${val * 3.5}px`;
                 bar.style.width = `${barWidth}px`;
                 
-                if (i === activeIndex) bar.classList.add('active-bar');
-                if (i === successIndex) bar.classList.add('success-bar');
-                if (failIndices.includes(i)) bar.classList.add('fail-bar');
-                if (rangeIndices.includes(i)) bar.classList.add('range-bar');
-
+                // Styling berdasarkan state
+                if (i === state.mid) bar.classList.add('active-bar');
+                if (i === state.success) bar.classList.add('success-bar');
+                if (state.fails && state.fails.includes(i)) bar.classList.add('fail-bar');
+                
+                // Tooltip Nilai
                 const label = document.createElement('div');
                 label.className = 'bar-label';
                 label.innerText = val;
                 bar.appendChild(label);
 
-                if (i === activeIndex) {
-                    const ptr = document.createElement('div');
-                    ptr.className = 'pointer';
-                    ptr.innerHTML = '▲';
-                    bar.appendChild(ptr);
+                // Penanda L / M / H untuk Binary Search
+                if (algoSelect.value === 'binary' && !state.success && state.success !== 0) {
+                    if (i === state.low) {
+                        const m = createMarker('Low', 'marker-low');
+                        bar.appendChild(m);
+                    }
+                    if (i === state.mid) {
+                        const m = createMarker('Mid', 'marker-mid');
+                        bar.appendChild(m);
+                    }
+                    if (i === state.high) {
+                        const m = createMarker('High', 'marker-high');
+                        bar.appendChild(m);
+                    }
                 }
 
                 visualArea.appendChild(bar);
             });
         }
 
+        function createMarker(text, className) {
+            const m = document.createElement('div');
+            m.className = `marker ${className}`;
+            m.innerText = text;
+            return m;
+        }
+
         async function sleep() {
-            const ms = speedSlider.value * 100;
+            const ms = (21 - speedSlider.value) * 100; // Inverse speed
             return new Promise(resolve => setTimeout(resolve, ms));
         }
 
@@ -232,28 +257,28 @@
                 
                 comparisons++;
                 statComp.innerText = comparisons;
-                renderBars(i);
+                renderBars({ mid: i, fails: Array.from({length: i}, (_, k) => k) });
                 await sleep();
 
                 if (data[i] === target) {
-                    renderBars(-1, i);
-                    statStatus.innerText = 'Ditemukan!';
+                    renderBars({ success: i, fails: Array.from({length: i}, (_, k) => k) });
+                    statStatus.innerText = `Ditemukan di indeks ${i}!`;
                     statStatus.className = 'font-medium text-green-400';
                     isRunning = false;
+                    btnRun.innerText = 'Selesai';
                     return;
                 }
             }
             
-            statStatus.innerText = 'Tidak Ada';
+            statStatus.innerText = 'Tidak Ditemukan';
             statStatus.className = 'font-medium text-red-400';
-            renderBars(-1, -1, data.map((_, i) => i));
+            renderBars({ fails: data.map((_, i) => i) });
             isRunning = false;
+            btnRun.innerText = 'Jalankan';
         }
 
         async function binarySearch() {
             const target = parseInt(targetInput.value);
-            statStatus.innerText = 'Mencari (Binary)...';
-            
             let low = 0;
             let high = data.length - 1;
             let fails = [];
@@ -265,34 +290,38 @@
                 comparisons++;
                 statComp.innerText = comparisons;
                 
-                // Visual range indices
-                let range = [];
-                for(let k=low; k<=high; k++) range.push(k);
-
-                renderBars(mid, -1, fails, range);
+                statStatus.innerText = `Memeriksa indeks tengah: ${mid}`;
+                renderBars({ low, high, mid, fails: [...fails] });
                 await sleep();
 
                 if (data[mid] === target) {
-                    renderBars(-1, mid);
-                    statStatus.innerText = 'Ditemukan!';
+                    renderBars({ success: mid, fails: [...fails] });
+                    statStatus.innerText = `Ditemukan di indeks ${mid}!`;
                     statStatus.className = 'font-medium text-green-400';
                     isRunning = false;
+                    btnRun.innerText = 'Selesai';
                     return;
                 }
 
                 if (data[mid] < target) {
-                    for(let k=low; k<=mid; k++) fails.push(k);
+                    statStatus.innerText = `${data[mid]} < ${target}. Buang sisi kiri.`;
+                    for(let k = low; k <= mid; k++) if(!fails.includes(k)) fails.push(k);
                     low = mid + 1;
                 } else {
-                    for(let k=mid; k<=high; k++) fails.push(k);
+                    statStatus.innerText = `${data[mid]} > ${target}. Buang sisi kanan.`;
+                    for(let k = mid; k <= high; k++) if(!fails.includes(k)) fails.push(k);
                     high = mid - 1;
                 }
+                
+                renderBars({ low, high, mid: -1, fails: [...fails] });
+                await sleep();
             }
 
-            statStatus.innerText = 'Tidak Ada';
+            statStatus.innerText = 'Tidak Ditemukan';
             statStatus.className = 'font-medium text-red-400';
-            renderBars(-1, -1, Array.from({length: data.length}, (_, i) => i));
+            renderBars({ fails: data.map((_, i) => i) });
             isRunning = false;
+            btnRun.innerText = 'Jalankan';
         }
 
         // Event Listeners
@@ -317,6 +346,11 @@
             generateData();
         });
 
+        btnRandomTarget.addEventListener('click', () => {
+            const randomVal = data[Math.floor(Math.random() * data.length)];
+            targetInput.value = randomVal;
+        });
+
         algoSelect.addEventListener('change', () => {
             updateLabels();
             generateData();
@@ -328,9 +362,7 @@
         });
 
         speedSlider.addEventListener('input', updateLabels);
-
-        // Resize handler to fix bar widths
-        window.addEventListener('resize', renderBars);
+        window.addEventListener('resize', () => renderBars());
 
         init();
     </script>
